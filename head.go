@@ -742,7 +742,7 @@ func (h *headChunkReader) Chunk(ref uint64) (chunkenc.Chunk, error) {
 	s.Unlock()
 
 	// Do not expose chunks that are outside of the specified range.
-	if c == nil || !intervalOverlap(mint, maxt, h.mint, h.maxt) {
+	if c == nil || !intervalOverlap(mint, maxt, h.mint, h.maxt-1) {
 		return nil, ErrNotFound
 	}
 	return &safeChunk{
@@ -849,7 +849,7 @@ func (h *headIndexReader) Series(ref uint64, lbls *labels.Labels, chks *[]chunks
 
 	for i, c := range s.chunks {
 		// Do not expose chunks that are outside of the specified range.
-		if !intervalOverlap(c.minTime, c.maxTime, h.mint, h.maxt) {
+		if !intervalOverlap(c.minTime, c.maxTime, h.mint, h.maxt-1) {
 			continue
 		}
 		*chks = append(*chks, chunks.Meta{

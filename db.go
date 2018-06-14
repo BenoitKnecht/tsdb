@@ -779,7 +779,7 @@ func (db *DB) Querier(mint, maxt int64) (Querier, error) {
 
 	for _, b := range db.blocks {
 		m := b.Meta()
-		if intervalOverlap(mint, maxt, m.MinTime, m.MaxTime) {
+		if intervalOverlap(mint, maxt, m.MinTime, m.MaxTime-1) {
 			blocks = append(blocks, b)
 		}
 	}
@@ -822,7 +822,7 @@ func (db *DB) Delete(mint, maxt int64, ms ...labels.Matcher) error {
 
 	for _, b := range db.blocks {
 		m := b.Meta()
-		if intervalOverlap(mint, maxt, m.MinTime, m.MaxTime) {
+		if intervalOverlap(mint, maxt, m.MinTime, m.MaxTime-1) {
 			g.Go(func(b *Block) func() error {
 				return func() error { return b.Delete(mint, maxt, ms...) }
 			}(b))
