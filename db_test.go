@@ -1155,3 +1155,50 @@ func TestChunkAtBlockBoundary(t *testing.T) {
 		testutil.Assert(t, chunkCount == 1, "expected 1 chunk in block %s, got %d", meta.ULID, chunkCount)
 	}
 }
+
+func TestQuerierWithBoundaryChunks(t *testing.T) {
+	db, close := openTestDB(t, nil)
+	defer close()
+	defer db.Close()
+
+	app := db.Appender()
+
+	blockRange := DefaultOptions.BlockRanges[0]
+	label := labels.FromStrings("foo", "bar")
+
+	for i := int64(0); i < 5; i++ {
+		_, err := app.Add(label, i*blockRange, 0)
+		testutil.Ok(t, err)
+	}
+
+	err := app.Commit()
+	testutil.Ok(t, err)
+
+	_, err = db.compact()
+	testutil.Ok(t, err)
+
+	for _, block := range db.blocks {
+		r, err := block.Index()
+		testutil.Ok(t, err)
+		defer r.Close()
+
+		meta := block.Meta()
+
+		fmt.Printf("block=%s\n", meta.ULID)
+	}
+
+	q, err := db.Querier(blockRange, 2*blockRange)
+	testutil.Ok(t, err)
+	defer q.Close()
+
+	fmt.Printf("len(q.blocks)=%d\n", len(q.(*querier).blocks))
+
+	series := query(t, q, labels.NewEqualMatcher("foo", "bar"))
+
+	for name, samples := range series {
+		fmt.Printf("%s:\n", name)
+		for _, sample := range samples {
+			fmt.Printf("  %d: %f\n", sample.t, sample.v)
+		}
+	}
+}
